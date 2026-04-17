@@ -1,54 +1,53 @@
-Project Title: Message Board DApp
+# Message Board DApp
 
-1. Project Overview
+## Project Overview
 This project is a simple decentralized application (DApp) built with Solidity, Remix, MetaMask, and the Sepolia test network.
-It allows users to store and update a message on the blockchain.
 
-2. Smart Contract Information
-Contract Name: MessageBoard
-Network: Sepolia
-Contract Address: 0x6F06603b351E2c07eAEAE00B8B694de65aa0eDeD
-Example Transaction Hash: 0xf8d3c55adad9a7d6708375bf059b667a9250d1f6d958de8ab32692a0c7089f17
+The smart contract stores a message on chain and allows users to update it through a blockchain transaction.
 
-3. Contract Features
-- State variables:
-  - message
-  - owner
-  - updateCount
-- Read function:
-  - getMessage()
-- Write function:
-  - setMessage(string newMessage)
-- Event:
-  - MessageUpdated(address indexed user, string newMessage, uint256 updateCount)
-- Validation rule:
-  - require(bytes(newMessage).length > 0, "Message cannot be empty")
+## Technologies Used
+- Solidity
+- Remix IDE
+- MetaMask
+- Sepolia Testnet
+- Ethers.js
+- HTML / JavaScript
 
-4. Front-End Features
-The front-end page allows the user to:
-- Connect MetaMask
-- Read the current message
-- Send a new transaction to update the message
-- Display the updated message and update count
+## Smart Contract Information
+- **Contract Name:** MessageBoard
+- **Network:** Sepolia
+- **Contract Address:** `0x6F06603b351E2c07eAEAE00B8B694de65aa0eDeD`
+- **Example Transaction Hash:** `0xf8d3c55adad9a7d6708375bf059b667a9250d1f6d958de8ab32692a0c7089f17`
 
-5. Demonstration Summary
-The contract was deployed successfully on the Sepolia test network.
-A transaction was sent using MetaMask to update the message.
-The event log was verified on Etherscan.
-The DApp front end successfully connected to MetaMask and read blockchain data.
+## Contract Features
+- **State variables**
+  - `message`
+  - `owner`
+  - `updateCount`
 
-6. Files Included
-- MessageBoard.sol
-- index.html
-- Screenshots of:
-  - Remix deployment
-  - Front-end read/write result
-  - Etherscan transaction/event log
+- **Read function**
+  - `getMessage()`
 
-7. Notes
-This project demonstrates:
-- smart contract deployment
-- blockchain state changes through transactions
-- event emission
-- MetaMask wallet interaction
-- front-end connection to a public Ethereum testnet
+- **Write function**
+  - `setMessage(string newMessage)`
+
+- **Event**
+  - `MessageUpdated(address indexed user, string newMessage, uint256 updateCount)`
+
+- **Validation**
+  - `require(bytes(newMessage).length > 0, "Message cannot be empty")`
+
+## Installation
+1. Install the MetaMask browser extension.
+2. Enable the Sepolia test network in MetaMask.
+3. Get Sepolia test ETH from a faucet.
+4. Open Remix IDE in a browser.
+5. Deploy `MessageBoard.sol` to Sepolia using MetaMask.
+
+## Run the Front End
+1. Make sure the contract address in `index.html` is correct.
+2. Open a terminal in the project folder.
+3. Start a local server:
+
+```bash
+python -m http.server 8000
