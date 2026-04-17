@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Message Board DApp</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 720px;
+      margin: 40px auto;
+      padding: 0 16px;
+      line-height: 1.6;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      box-sizing: border-box;
+    }
+    button {
+      padding: 10px 16px;
+      margin-right: 8px;
+      margin-top: 8px;
+      cursor: pointer;
+    }
+    .box {
+      border: 1px solid #ccc;
+      padding: 16px;
+      margin-top: 16px;
+      border-radius: 8px;
+    }
+    #status {
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+  <h1>Message Board DApp</h1>
+  <p>Network: Ethereum Sepolia</p>
+
+  <button id="connectBtn">Connect MetaMask</button>
+  <button id="switchBtn">Switch to Sepolia</button>
+  <button id="readBtn">Read Message</button>
+
+  <div class="box">
+    <p><strong>Connected account:</strong> <span id="account">Not connected</span></p>
+    <p><strong>Current message:</strong> <span id="currentMessage">-</span></p>
+    <p><strong>Update count:</strong> <span id="updateCount">-</span></p>
+  </div>
+
+  <div class="box">
+    <label for="newMessage"><strong>New message</strong></label>
+    <input id="newMessage" type="text" placeholder="Enter a new message" />
+    <button id="writeBtn">Send Transaction</button>
+  </div>
+
+  <div class="box">
+    <p><strong>Status:</strong></p>
+    <p id="status">Waiting...</p>
+  </div>
+
+  <script type="module">
+    import { ethers } from "https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.min.js";
+
+    const CONTRACT_ADDRESS = "0x6F06603b351E2c07eAEAE00B8B694de65aa0eDeD";
+    const SEPOLIA_CHAIN_ID = "0xaa36a7";
+
+    const ABI = [
+      "function getMessage() view returns (string)",
+      "function setMessage(string newMessage)",
+      "function updateCount() view returns (uint256)"
+    ];
+
+    let provider = null;
+    let signer = null;
+    let readContract = null;
+    let writeContract = null;
+
+    const connectBtn = document.getElementById("connectBtn");
+    const switchBtn = document.getElementById("switchBtn");
+    const readBtn = document.getElementById("readBtn");
+    const writeBtn = document.getElementById("writeBtn");
+
+    const accountEl = document.getElementById("account");
+    const currentMessageEl = document.getElementById("currentMessage");
+    const updateCountEl = document.getElementById("updateCount");
+    const newMessageEl = document.getElementById("newMessage");
+    const statusEl = document.getElementById("status");
+
+    function setStatus(msg) {
+      statusEl.textContent = msg;
+    }
+
+    async function getChainId() {
+      return await window.ethereum.request({ method: "eth_chainId" });
+    }
+
+    async function switchToSepolia() {
+      try {
+        if (!window.ethereum) {
+          setStatus("MetaMask not found.");
+          return false;
+        }
+
+        await window.ethereum.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: SEPOLIA_CHAIN_ID }]
+        });
+
+        setStatus("Switched to Sepolia.");
+        return true;
+      } catch (err) {
+        setStatus("Switch failed: " + err.message);
+        return false;
+      }
+    }
+
+    async function ensureSepolia(autoSwitch = false) {
+      if (!window.ethereum) {
+        setStatus("MetaMask not found.");
+        return false;
+      }
+
+      let chainId = await getChainId();
+
+      if ((chainId || "").toLowerCase() === SEPOLIA_CHAIN_ID) {
+        return true;
+      }
+
+      if (autoSwitch) {
+        const switched = await switchToSepolia();
+        if (!switched) return false;
+        chainId = await getChainId();
+        return (chainId || "").toLowerCase() === SEPOLIA_CHAIN_ID;
+      }
+
+      setStatus("Current network is " + chainId + ". Click 'Switch to Sepolia'.");
+      return false;
+    }
+
+    async function initContracts() {
+      provider = new ethers.BrowserProvider(window.ethereum, "any");
+      signer = await provider.getSigner();
+      readContract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
+      writeContract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+
+      const address = await signer.getAddress();
+      accountEl.textContent = address;
+    }
+
+    async function connectWallet() {
+      try {
+        if (!window.ethereum) {
+          setStatus("MetaMask not found.");
+          return;
+        }
+
+        await window.ethereum.request({ method: "eth_requestAccounts" });
+
+        const ok = await ensureSepolia(true);
+        if (!ok) return;
+
+        await initContracts();
+        setStatus("Wallet connected successfully.");
+      } catch (err) {
+        setStatus("Connect failed: " + err.message);
+      }
+    }
+
+    async function readMessage() {
+      try {
+        if (!window.ethereum) {
+          setStatus("MetaMask not found.");
+          return;
+        }
+
+        const ok = await ensureSepolia(false);
+        if (!ok) return;
+
+        if (!readContract || !provider) {
+          provider = new ethers.BrowserProvider(window.ethereum, "any");
+          readContract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
+        }
+
+        const msg = await readContract.getMessage();
+        const count = await readContract.updateCount();
+
+        currentMessageEl.textContent = msg;
+        updateCountEl.textContent = count.toString();
+        setStatus("Read success.");
+      } catch (err) {
+        setStatus("Read failed: " + err.message);
+      }
+    }
+
+    async function writeMessage() {
+      try {
+        if (!window.ethereum) {
+          setStatus("MetaMask not found.");
+          return;
+        }
+
+        const newMsg = newMessageEl.value.trim();
+        if (!newMsg) {
+          setStatus("Message cannot be empty.");
+          return;
+        }
+
+        const ok = await ensureSepolia(true);
+        if (!ok) return;
+
+        if (!writeContract || !signer) {
+          await initContracts();
+        }
+
+        const tx = await writeContract.setMessage(newMsg);
+        setStatus("Transaction sent: " + tx.hash);
+
+        await tx.wait();
+        setStatus("Transaction confirmed: " + tx.hash);
+
+        await readMessage();
+      } catch (err) {
+        setStatus("Write failed: " + err.message);
+      }
+    }
+
+    if (window.ethereum && window.ethereum.on) {
+      window.ethereum.on("chainChanged", () => window.location.reload());
+      window.ethereum.on("accountsChanged", () => window.location.reload());
+    }
+
+    connectBtn.addEventListener("click", connectWallet);
+    switchBtn.addEventListener("click", switchToSepolia);
+    readBtn.addEventListener("click", readMessage);
+    writeBtn.addEventListener("click", writeMessage);
+  </script>
+</body>
+</html>
